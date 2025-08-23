@@ -29,9 +29,9 @@ pipeline {
                 withCredentials([
                     [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-jenkins-creds']
                 ]) {
-                    // dist/ klasörünü S3 bucket'a senkronize et, eski dosyaları sil
+                    // dist/ klasörünü S3 bucket'a senkronize et, eski dosyaları sil arn:aws:s3:::hr-ai-bucket
                     sh '''
-                        aws s3 sync dist/ s3://$S3_BUCKET/ --delete
+                        aws s3 sync dist/ s3://hr-ai-bucket/ --delete
                     '''
                 }
             }
