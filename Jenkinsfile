@@ -1,10 +1,5 @@
 pipeline {
-    agent { 
-        docker { 
-            image 'amazon/aws-cli:2.14.3-node18' // AWS CLI + Node 18 hazır
-            args '-u root:root' // root ile çalıştır, dosya izin sorunlarını önler
-        } 
-    }
+    agent any
     environment {
         AWS_DEFAULT_REGION = 'us-east-1'
         S3_BUCKET = 'hr-ai-bucket'
@@ -25,6 +20,17 @@ pipeline {
         stage('Build') {
             steps {
                 sh 'npm run build'
+            }
+        }
+
+        stage('Install AWS CLI') {
+            steps {
+                sh '''
+                    curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+                    unzip awscliv2.zip
+                    sudo ./aws/install
+                    aws --version
+                '''
             }
         }
 
