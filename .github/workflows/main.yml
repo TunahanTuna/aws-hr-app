@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main   # sadece main'e push olunca çalışsın
+  workflow_dispatch:   # manuel olarak da tetiklenebilir
 
 jobs:
   deploy:
