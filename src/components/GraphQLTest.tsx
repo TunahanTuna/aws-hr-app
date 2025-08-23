@@ -3,9 +3,9 @@ import { useQuery, useMutation } from '@apollo/client';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/Card';
 import { Button } from './ui/Button';
 import { LoadingSpinner } from './ui/LoadingSpinner';
-import { ErrorMessage } from './ui/ErrorMessage';
+// ...existing code...
 import { 
-  GET_PROJECTS,
+  // ...existing code...
   GET_PROJECTS_DETAILED, 
   GET_PROJECT_STATS,
   GET_CUSTOMERS,

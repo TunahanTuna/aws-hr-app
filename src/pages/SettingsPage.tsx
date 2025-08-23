@@ -20,7 +20,7 @@ import { Select } from '../components/ui/Select';
 import { useLanguage } from '../i18n/useLanguage';
 
 export const SettingsPage: React.FC = () => {
-  const { t, language, setLanguage } = useLanguage();
+  const { t, setLanguage } = useLanguage();
   const [activeTab, setActiveTab] = useState('profile');
   const [showPassword, setShowPassword] = useState(false);
 

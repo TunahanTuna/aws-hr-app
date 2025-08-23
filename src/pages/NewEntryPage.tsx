@@ -25,7 +25,7 @@ export const NewEntryPage: React.FC = () => {
   const { data: projectsData, loading: projectsLoading, error: projectsError } = useProjects();
   const { data: divisionsData, loading: divisionsLoading, error: divisionsError } = useDivisions();
   const { data: taskTypesData, loading: taskTypesLoading, error: taskTypesError } = useTaskTypes();
-  const [createTimeEntry, { loading: createTimeEntryLoading, error: createTimeEntryError }] = useCreateTimeEntry();
+  const [createTimeEntry, { loading: createTimeEntryLoading }] = useCreateTimeEntry();
 
   const users = useMemo<User[]>(() => usersData?.users || [], [usersData?.users]);
   const customers = useMemo<Customer[]>(() => customersData?.customers || [], [customersData?.customers]);
@@ -50,7 +50,7 @@ export const NewEntryPage: React.FC = () => {
   });
 
   // Project tasks hook - depends on selected project
-  const { data: projectTasksData, loading: projectTasksLoading } = useProjectTasks(formData.projectId);
+  const { data: projectTasksData } = useProjectTasks(formData.projectId);
   const projectTasks = useMemo<ProjectTask[]>(() => projectTasksData?.project_tasks || [], [projectTasksData?.project_tasks]);
 
   const projectsForCustomer = useMemo<Project[]>(() => {

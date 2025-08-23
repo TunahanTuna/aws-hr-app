@@ -32,7 +32,7 @@ import {
 
 export const TeamPage: React.FC = () => {
   const { t } = useLanguage();
-  const { showSuccess, showError } = useToast();
+  const { showError } = useToast();
   const [showAddMember, setShowAddMember] = useState(false);
   const [editingMember, setEditingMember] = useState<any>(null);
   
