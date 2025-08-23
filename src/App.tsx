@@ -1,6 +1,6 @@
 
 
-import { BrowserRouter } from 'react-router-dom';
+import { HashRouter } from 'react-router-dom';
 import { LanguageProvider } from './i18n/LanguageContext';
 import { AppProvider } from './store/AppContext';
 import { ToastProvider } from './store/ToastContext';
@@ -9,7 +9,7 @@ import './index.css';
 
 function App() {
   return (
-    <BrowserRouter>
+    <HashRouter>
       <LanguageProvider>
         <AppProvider>
           <ToastProvider>
@@ -17,7 +17,7 @@ function App() {
           </ToastProvider>
         </AppProvider>
       </LanguageProvider>
-    </BrowserRouter>
+    </HashRouter>
   );
 }
 
