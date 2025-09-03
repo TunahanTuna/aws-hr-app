@@ -14,14 +14,42 @@ import {
   X,
   User,
   FileText,
-  Star
+  Star,
+  Filter,
+  FilterX
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
-
+import { Select } from '../components/ui/Select';
 import { Button } from '../components/ui/Button';
 import { useLanguage } from '../i18n/useLanguage';
 import { WeekdayView } from '../components/calendar';
+import { GET_USERS, GET_PROJECTS } from '../lib/graphql/queries';
+
+// Project Members query for connected filtering
+const GET_PROJECT_MEMBERS = gql`
+  query GetProjectMembers {
+    project_members {
+      id
+      project_id
+      user_id
+      role
+      start_date
+      end_date
+      project {
+        id
+        name
+        status
+      }
+      user {
+        id
+        name
+        email
+        role
+      }
+    }
+  }
+`;
 
 // Configure moment localizer
 const localizer = momentLocalizer(moment);
@@ -51,6 +79,19 @@ const GET_PROJECT_TASKS = gql`
       priority
       due_date
       project_id
+      assigned_to
+      assigned_user {
+        id
+        name
+        email
+      }
+      project {
+        id
+        name
+        customer {
+          name
+        }
+      }
     }
     task_time_summary {
       task_id
@@ -71,11 +112,48 @@ export const CalendarPage: React.FC = () => {
   const [currentView, setCurrentView] = useState<View | 'haftaici'>('month');
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedProjectId, setSelectedProjectId] = useState<string>('');
+  const [selectedUserId, setSelectedUserId] = useState<string>('');
+  const [showFilters, setShowFilters] = useState(false);
 
 
   // GraphQL queries
   const { data: specialDaysData } = useQuery(GET_SPECIAL_DAYS);
   const { data: projectTasksData } = useQuery(GET_PROJECT_TASKS);
+  const { data: usersData } = useQuery(GET_USERS);
+  const { data: projectsData } = useQuery(GET_PROJECTS);
+  const { data: projectMembersData } = useQuery(GET_PROJECT_MEMBERS);
+
+  // Extract users and projects from data
+  const users = usersData?.users || [];
+  const projects = projectsData?.projects || [];
+  const projectMembers = projectMembersData?.project_members || [];
+
+  // Create connected filter logic
+  const getFilteredProjects = () => {
+    if (!selectedUserId) return projects;
+    
+    // Get projects where selected user is a member
+    const userProjectIds = projectMembers
+      .filter((member: any) => member.user_id === selectedUserId)
+      .map((member: any) => member.project_id);
+    
+    return projects.filter((project: any) => userProjectIds.includes(project.id));
+  };
+
+  const getFilteredUsers = () => {
+    if (!selectedProjectId) return users;
+    
+    // Get users who are members of selected project
+    const projectUserIds = projectMembers
+      .filter((member: any) => member.project_id === selectedProjectId)
+      .map((member: any) => member.user_id);
+    
+    return users.filter((user: any) => projectUserIds.includes(user.id));
+  };
+
+  const filteredProjects = getFilteredProjects();
+  const filteredUsers = getFilteredUsers();
 
   // Mock calendar data - converted to Big Calendar format
   const mockEvents = [
@@ -89,7 +167,8 @@ export const CalendarPage: React.FC = () => {
         participants: ['Ahmet Yılmaz', 'Fatma Demir', 'Mehmet Kaya'],
         location: 'Conference Room A',
         status: 'scheduled',
-        description: 'Daily team standup meeting to discuss progress and blockers'
+        description: 'Daily team standup meeting to discuss progress and blockers',
+        project_id: projects.length > 0 ? projects[0]?.id : null
       }
     },
     {
@@ -102,7 +181,8 @@ export const CalendarPage: React.FC = () => {
         participants: ['Fatma Demir', 'TechCorp Team'],
         location: 'Virtual Meeting',
         status: 'scheduled',
-        description: 'Present project progress to TechCorp stakeholders'
+        description: 'Present project progress to TechCorp stakeholders',
+        project_id: projects.length > 1 ? projects[1]?.id : projects[0]?.id
       }
     },
     {
@@ -115,7 +195,8 @@ export const CalendarPage: React.FC = () => {
         participants: ['Ahmet Yılmaz', 'Can Yıldız'],
         location: 'Development Room',
         status: 'scheduled',
-        description: 'Review recent code changes and discuss improvements'
+        description: 'Review recent code changes and discuss improvements',
+        project_id: projects.length > 0 ? projects[0]?.id : null
       }
     },
     {
@@ -128,7 +209,8 @@ export const CalendarPage: React.FC = () => {
         participants: ['All Team Members'],
         location: 'Main Conference Room',
         status: 'scheduled',
-        description: 'Q1 2024 project planning and resource allocation'
+        description: 'Q1 2024 project planning and resource allocation',
+        project_id: projects.length > 1 ? projects[1]?.id : projects[0]?.id
       }
     },
     {
@@ -141,7 +223,8 @@ export const CalendarPage: React.FC = () => {
         participants: ['Mehmet Kaya', 'MarketingPro Team'],
         location: 'Client Office',
         status: 'scheduled',
-        description: 'Gather feedback on website redesign mockups'
+        description: 'Gather feedback on website redesign mockups',
+        project_id: projects.length > 2 ? projects[2]?.id : projects[0]?.id
       }
     },
     {
@@ -154,7 +237,8 @@ export const CalendarPage: React.FC = () => {
         participants: ['Ayşe Özkan', 'Can Yıldız', 'Zeynep Arslan'],
         location: 'Engineering Room',
         status: 'scheduled',
-        description: 'Review technical architecture for CRM integration'
+        description: 'Review technical architecture for CRM integration',
+        project_id: projects.length > 1 ? projects[1]?.id : projects[0]?.id
       }
     },
     {
@@ -167,7 +251,8 @@ export const CalendarPage: React.FC = () => {
         participants: ['All Team Members'],
         location: 'Company Garden',
         status: 'scheduled',
-        description: 'Monthly team building and networking event'
+        description: 'Monthly team building and networking event',
+        project_id: null // Company-wide event, not project-specific
       }
     },
     {
@@ -180,7 +265,8 @@ export const CalendarPage: React.FC = () => {
         participants: ['Ahmet Yılmaz', 'Fatma Demir'],
         location: 'N/A',
         status: 'pending',
-        description: 'MVP delivery deadline for TechCorp e-commerce platform'
+        description: 'MVP delivery deadline for TechCorp e-commerce platform',
+        project_id: projects.length > 1 ? projects[1]?.id : projects[0]?.id
       }
     }
   ];
@@ -230,11 +316,16 @@ export const CalendarPage: React.FC = () => {
         end: dueDate,
         resource: {
           type: 'task',
-          participants: ['Assigned User'],
-          location: 'Project Task',
+          participants: task.assigned_user ? [task.assigned_user.name] : ['Unassigned'],
+          location: task.project ? task.project.name : 'Project Task',
           status: task.status || 'pending',
           description: task.description || '',
           priority: task.priority || 'medium',
+          project_id: task.project_id,
+          assigned_to: task.assigned_to,
+          project_name: task.project?.name || 'Unknown Project',
+          customer_name: task.project?.customer?.name || 'Unknown Customer',
+          assigned_user_name: task.assigned_user?.name || 'Unassigned',
           estimated_hours: timeSummary.estimated_hours || 0,
           actual_hours: timeSummary.actual_hours || 0,
           calculated_actual_hours: timeSummary.calculated_actual_hours || 0,
@@ -247,8 +338,60 @@ export const CalendarPage: React.FC = () => {
     });
   }, [projectTasksData]);
 
+  // Filter function
+  const filterEvents = (events: any[]) => {
+    return events.filter(event => {
+      // Filter by project
+      if (selectedProjectId) {
+        if (event.resource?.type === 'task' && event.resource?.project_id) {
+          return event.resource.project_id === selectedProjectId;
+        }
+        // For mock events, we'll add project_id in resource
+        if (event.resource?.project_id && event.resource.project_id !== selectedProjectId) {
+          return false;
+        }
+        // Skip non-task events if project filter is active
+        if (event.resource?.type !== 'task' && event.resource?.type !== 'holiday') {
+          return false;
+        }
+      }
+      
+      // Filter by user
+      if (selectedUserId) {
+        if (event.resource?.type === 'task' && event.resource?.assigned_to) {
+          return event.resource.assigned_to === selectedUserId;
+        }
+        // For mock events, check participants
+        if (event.resource?.participants && Array.isArray(event.resource.participants)) {
+          const selectedUser = users.find((u: any) => u.id === selectedUserId);
+          if (selectedUser) {
+            return event.resource.participants.some((participant: string) => 
+              participant.includes(selectedUser.name)
+            );
+          }
+        }
+        // Skip non-task events if user filter is active
+        if (event.resource?.type !== 'task' && event.resource?.type !== 'holiday') {
+          return false;
+        }
+      }
+      
+      return true;
+    });
+  };
+
   // Combine mock events with special days and project tasks
-  const events = [...mockEvents, ...specialDayEvents, ...projectTaskEvents];
+  const allEvents = [...mockEvents, ...specialDayEvents, ...projectTaskEvents];
+  const events = filterEvents(allEvents);
+
+  // Clear filters function
+  const clearFilters = () => {
+    setSelectedProjectId('');
+    setSelectedUserId('');
+  };
+
+  // Check if any filters are active
+  const hasActiveFilters = selectedProjectId || selectedUserId;
 
   // Modal handlers
   const openEventModal = (event: any) => {
@@ -301,6 +444,16 @@ export const CalendarPage: React.FC = () => {
     }
   };
 
+  const getAllCurrentMonthEvents = () => {
+    const currentMonth = currentDate.getMonth();
+    const currentYear = currentDate.getFullYear();
+    
+    return allEvents.filter((event: any) => {
+      const eventDate = new Date(event.start);
+      return eventDate.getMonth() === currentMonth && eventDate.getFullYear() === currentYear;
+    });
+  };
+
   const getCurrentMonthEvents = () => {
     const currentMonth = currentDate.getMonth();
     const currentYear = currentDate.getFullYear();
@@ -312,6 +465,7 @@ export const CalendarPage: React.FC = () => {
   };
 
   const currentMonthEvents = getCurrentMonthEvents();
+  const allCurrentMonthEvents = getAllCurrentMonthEvents();
 
   return (
     <motion.div 
@@ -348,6 +502,22 @@ export const CalendarPage: React.FC = () => {
           <motion.div
             initial={{ x: 20, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Button 
+              variant={showFilters ? "jiraSecondary" : "outline"} 
+              size="lg"
+              onClick={() => setShowFilters(!showFilters)}
+            >
+              <Filter className="h-5 w-5 mr-2" />
+              Filters {hasActiveFilters && `(${[selectedProjectId, selectedUserId].filter(Boolean).length})`}
+            </Button>
+          </motion.div>
+          <motion.div
+            initial={{ x: 20, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
             transition={{ duration: 0.5, delay: 0.3 }}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -360,10 +530,168 @@ export const CalendarPage: React.FC = () => {
         </div>
       </motion.div>
 
+      {/* Filter Section */}
+      <AnimatePresence>
+        {showFilters && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Filter className="h-5 w-5 text-gray-500" />
+                  <span>Calendar Filters</span>
+                  {hasActiveFilters && (
+                    <Badge variant="jiraSecondary" className="ml-2">
+                      {[selectedProjectId, selectedUserId].filter(Boolean).length} active
+                    </Badge>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {/* Connected Filter Info */}
+                {(selectedProjectId || selectedUserId) && (
+                  <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-sm text-blue-800 font-medium mb-1">
+                      🔗 Connected Filters Active
+                    </p>
+                    <p className="text-xs text-blue-600">
+                      {selectedProjectId && selectedUserId 
+                        ? 'Showing events for selected project-user combination'
+                        : selectedProjectId 
+                          ? 'User list filtered to show only project members'
+                          : 'Project list filtered to show only user\'s projects'
+                      }
+                    </p>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {/* Project Filter */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700 flex items-center space-x-2">
+                      <FileText className="h-4 w-4 text-gray-500" />
+                      <span>Project {selectedUserId && `(${filteredProjects.length})`}</span>
+                    </label>
+                    <Select
+                      value={selectedProjectId}
+                      onChange={(e) => {
+                        setSelectedProjectId(e.target.value);
+                        // Clear user filter if selected user is not in the new project
+                        if (e.target.value && selectedUserId) {
+                          const newProjectUserIds = projectMembers
+                            .filter((member: any) => member.project_id === e.target.value)
+                            .map((member: any) => member.user_id);
+                          if (!newProjectUserIds.includes(selectedUserId)) {
+                            setSelectedUserId('');
+                          }
+                        }
+                      }}
+                      className="w-full"
+                    >
+                      <option value="">All Projects</option>
+                      {filteredProjects.map((project: any) => (
+                        <option key={project.id} value={project.id}>
+                          {project.name} {selectedUserId && filteredProjects.length < projects.length ? '✓' : ''}
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
+
+                  {/* User Filter */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700 flex items-center space-x-2">
+                      <User className="h-4 w-4 text-gray-500" />
+                      <span>Assigned User {selectedProjectId && `(${filteredUsers.length})`}</span>
+                    </label>
+                    <Select
+                      value={selectedUserId}
+                      onChange={(e) => {
+                        setSelectedUserId(e.target.value);
+                        // Clear project filter if selected project doesn't include the new user
+                        if (e.target.value && selectedProjectId) {
+                          const userProjectIds = projectMembers
+                            .filter((member: any) => member.user_id === e.target.value)
+                            .map((member: any) => member.project_id);
+                          if (!userProjectIds.includes(selectedProjectId)) {
+                            setSelectedProjectId('');
+                          }
+                        }
+                      }}
+                      className="w-full"
+                    >
+                      <option value="">All Users</option>
+                      {filteredUsers.map((user: any) => (
+                        <option key={user.id} value={user.id}>
+                          {user.name} {selectedProjectId && filteredUsers.length < users.length ? '✓' : ''}
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
+
+                  {/* Clear Filters */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">
+                      Actions
+                    </label>
+                    <Button 
+                      variant="outline" 
+                      onClick={clearFilters}
+                      disabled={!hasActiveFilters}
+                      className="w-full flex items-center space-x-2"
+                    >
+                      <FilterX className="h-4 w-4" />
+                      <span>Clear Filters</span>
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Filter Summary */}
+                {hasActiveFilters && (
+                  <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                    <p className="text-sm text-blue-800 font-medium mb-1">Active Filters:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedProjectId && (
+                        <Badge variant="jira" className="text-xs">
+                          Project: {projects.find((p: any) => p.id === selectedProjectId)?.name || 'Unknown'}
+                        </Badge>
+                      )}
+                      {selectedUserId && (
+                        <Badge variant="jira" className="text-xs">
+                          User: {users.find((u: any) => u.id === selectedUserId)?.name || 'Unknown'}
+                        </Badge>
+                      )}
+                      {selectedProjectId && selectedUserId && (
+                        <Badge variant="jiraSuccess" className="text-xs">
+                          Connected Filter Active
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Calendar */}
       <Card>
         <CardHeader>
-          <h2 className="text-xl font-semibold text-gray-900">Calendar Events</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-gray-900">Calendar Events</h2>
+            <div className="flex items-center space-x-2 text-sm text-gray-600">
+              <span>Showing {events.length} of {allEvents.length} events</span>
+              {hasActiveFilters && (
+                <Badge variant="jiraSecondary" className="text-xs">
+                  Filtered
+                </Badge>
+              )}
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           {/* React Big Calendar */}
@@ -509,8 +837,13 @@ export const CalendarPage: React.FC = () => {
                 <CalendarIcon className="h-6 w-6 text-blue-600" />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Events</p>
+                <p className="text-sm font-medium text-gray-600">
+                  {hasActiveFilters ? 'Filtered Events' : 'Total Events'}
+                </p>
                 <p className="text-2xl font-bold text-gray-900">{currentMonthEvents.length}</p>
+                {hasActiveFilters && (
+                  <p className="text-xs text-gray-500">of {allCurrentMonthEvents.length} total</p>
+                )}
               </div>
             </div>
           </CardContent>
