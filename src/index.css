@@ -40,3 +40,86 @@
 .custom-scrollbar {
   scroll-behavior: smooth;
 }
+
+/* React Big Calendar Customizations */
+/* Hide time gutter in week view */
+.rbc-time-view .rbc-time-gutter {
+  display: none !important;
+}
+
+/* Hide time slot grid lines in week view */
+.rbc-time-view .rbc-time-slot {
+  border-top: none !important;
+}
+
+/* Hide time column borders */
+.rbc-time-view .rbc-time-column {
+  border-left: none !important;
+}
+
+/* Hide hour markers */
+.rbc-time-view .rbc-time-content > * {
+  border-left: none !important;
+}
+
+/* Adjust day columns to fill the space left by hidden time gutter */
+.rbc-time-view .rbc-time-content {
+  margin-left: 0 !important;
+}
+
+/* Hide all time-related labels and grid lines in week view */
+.rbc-time-view .rbc-time-header-gutter {
+  display: none !important;
+}
+
+/* Remove grid lines between time slots */
+.rbc-time-view .rbc-timeslot-group {
+  border-bottom: none !important;
+}
+
+/* Style the all-day row to be more prominent */
+.rbc-time-view .rbc-allday-cell {
+  background-color: #f8fafc;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+/* Allow event titles to wrap to 2 lines */
+.rbc-event {
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: initial !important;
+  line-height: 1.2 !important;
+  padding: 4px 6px !important;
+  min-height: 20px !important;
+  height: auto !important;
+  max-height: 48px !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+}
+
+/* Event content styling */
+.rbc-event-content {
+  white-space: normal !important;
+  overflow: visible !important;
+  line-height: 1.2 !important;
+  display: block !important;
+}
+
+/* Increase event container height to accommodate 2 lines */
+.rbc-month-view .rbc-event,
+.rbc-week-view .rbc-event,
+.rbc-day-view .rbc-event {
+  min-height: 32px !important;
+  height: auto !important;
+  max-height: 48px !important;
+}
+
+/* Adjust all-day events in week view */
+.rbc-time-view .rbc-allday-event {
+  min-height: 24px !important;
+  height: auto !important;
+  max-height: 48px !important;
+}

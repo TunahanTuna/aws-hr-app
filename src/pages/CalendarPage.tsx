@@ -21,6 +21,7 @@ import { Badge } from '../components/ui/Badge';
 
 import { Button } from '../components/ui/Button';
 import { useLanguage } from '../i18n/useLanguage';
+import { WeekdayView } from '../components/calendar';
 
 // Configure moment localizer
 const localizer = momentLocalizer(moment);
@@ -67,9 +68,10 @@ const GET_PROJECT_TASKS = gql`
 export const CalendarPage: React.FC = () => {
   const { t } = useLanguage();
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [currentView, setCurrentView] = useState<View>('month');
+  const [currentView, setCurrentView] = useState<View | 'haftaici'>('month');
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
 
   // GraphQL queries
   const { data: specialDaysData } = useQuery(GET_SPECIAL_DAYS);
@@ -342,18 +344,20 @@ export const CalendarPage: React.FC = () => {
             <p className="text-gray-600 mt-1">Schedule and manage team events</p>
           </motion.div>
         </div>
-        <motion.div
-          initial={{ x: 20, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          <Button variant="jira" size="lg">
-            <Plus className="h-5 w-5 mr-2" />
-            Add Event
-          </Button>
-        </motion.div>
+        <div className="flex items-center space-x-4">
+          <motion.div
+            initial={{ x: 20, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Button variant="jira" size="lg">
+              <Plus className="h-5 w-5 mr-2" />
+              Add Event
+            </Button>
+          </motion.div>
+        </div>
       </motion.div>
 
       {/* Calendar */}
@@ -370,12 +374,24 @@ export const CalendarPage: React.FC = () => {
               startAccessor="start"
               endAccessor="end"
               style={{ height: '100%' }}
-              views={['month', 'week', 'day']}
-              view={currentView}
+              views={{
+                month: true,
+                week: true,
+                day: true,
+                haftaici: WeekdayView
+              } as any}
+              view={currentView as any}
               onView={setCurrentView}
               date={currentDate}
               onNavigate={setCurrentDate}
               onSelectEvent={openEventModal}
+              step={1440} // 24 hours in minutes - removes hourly grid
+              timeslots={1} // Number of timeslots per step
+              showMultiDayTimes={false} // Hide time labels for multi-day events
+              // Weekend visibility is controlled by the custom weekday view
+              allDayAccessor={(event: any) => !event.start || !event.end || 
+                moment(event.start).format('HH:mm') === '00:00' && 
+                moment(event.end).format('HH:mm') === '00:00'} // Treat events as all-day
               eventPropGetter={(event: any) => ({
                 style: {
                   backgroundColor: event.resource?.type === 'meeting' ? '#3b82f6' :
@@ -398,11 +414,12 @@ export const CalendarPage: React.FC = () => {
                 month: 'Ay',
                 week: 'Hafta',
                 day: 'Gün',
+                haftaici: 'Haftaiçi',
                 today: 'Bugün',
                 previous: 'Önceki',
                 next: 'Sonraki',
-                showMore: (total) => `+${total} daha`
-              }}
+                showMore: (total: number) => `+${total} daha`
+              } as any}
               formats={{
                 monthHeaderFormat: 'MMMM YYYY',
                 dayHeaderFormat: 'dddd',
